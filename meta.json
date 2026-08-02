@@ -1,0 +1,116 @@
+{
+  "auth": {
+    "oAuthProviders": [
+      "github",
+      "google"
+    ],
+    "requireEmailVerification": true,
+    "passwordMinLength": 6,
+    "requireNumber": false,
+    "requireLowercase": false,
+    "requireUppercase": false,
+    "requireSpecialChar": false,
+    "verifyEmailMethod": "code",
+    "resetPasswordMethod": "code"
+  },
+  "database": {
+    "tables": [
+      {
+        "tableName": "exams",
+        "recordCount": 1
+      },
+      {
+        "tableName": "profiles",
+        "recordCount": 4
+      },
+      {
+        "tableName": "questions",
+        "recordCount": 0
+      },
+      {
+        "tableName": "submissions",
+        "recordCount": 0
+      }
+    ],
+    "totalSizeInGB": 0.009121700190007687,
+    "hint": "To retrieve detailed schema information for a specific table, call the get-table-schema tool with the table name."
+  },
+  "storage": {
+    "buckets": [
+      {
+        "name": "aadhaar_cards",
+        "public": true,
+        "createdAt": "2026-03-30T10:28:47.047Z",
+        "objectCount": 1
+      }
+    ],
+    "totalSizeInGB": 4.6566128730773926e-9
+  },
+  "functions": [],
+  "aiIntegration": {
+    "models": [
+      {
+        "inputModality": [
+          "text",
+          "image"
+        ],
+        "outputModality": [
+          "text"
+        ],
+        "modelId": "deepseek/deepseek-v3.2"
+      },
+      {
+        "inputModality": [
+          "text",
+          "image"
+        ],
+        "outputModality": [
+          "text"
+        ],
+        "modelId": "minimax/minimax-m2.1"
+      },
+      {
+        "inputModality": [
+          "text",
+          "image"
+        ],
+        "outputModality": [
+          "text"
+        ],
+        "modelId": "x-ai/grok-4.1-fast"
+      },
+      {
+        "inputModality": [
+          "text",
+          "image"
+        ],
+        "outputModality": [
+          "text"
+        ],
+        "modelId": "anthropic/claude-sonnet-4.5"
+      },
+      {
+        "inputModality": [
+          "text",
+          "image"
+        ],
+        "outputModality": [
+          "text"
+        ],
+        "modelId": "openai/gpt-4o-mini"
+      },
+      {
+        "inputModality": [
+          "text",
+          "image"
+        ],
+        "outputModality": [
+          "text",
+          "image"
+        ],
+        "modelId": "google/gemini-3-pro-image-preview"
+      }
+    ]
+  },
+  "version": "1.0.0"
+}
