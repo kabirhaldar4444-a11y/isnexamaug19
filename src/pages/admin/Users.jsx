@@ -298,20 +298,6 @@ const Users = ({ user, profile: activeProfile }) => {
                         >
                           <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                         </button>
-                        {u.role !== 'admin' && (
-                          <button
-                            onClick={() => navigate(`/admin/users/servicedelivery/${u.id}`)}
-                            className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 text-slate-400 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all duration-300 flex items-center justify-center shadow-sm"
-                            title="Service Delivery Status"
-                          >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <rect x="1" y="3" width="15" height="13" rx="2" ry="2" />
-                              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
-                              <circle cx="5.5" cy="18.5" r="2.5" />
-                              <circle cx="18.5" cy="18.5" r="2.5" />
-                            </svg>
-                          </button>
-                        )}
                       </div>
 
                       <button

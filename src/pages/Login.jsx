@@ -49,7 +49,7 @@ const Login = ({ onLoginSuccess }) => {
       if (profile.role === 'candidate') {
         await onLoginSuccess();
         toast(`Welcome back, ${profile.full_name || 'Candidate'}`, 'success');
-        navigate(profile.profile_completed ? '/' : '/complete-profile');
+        navigate('/');
       } else {
         await supabase.auth.signOut({ scope: 'local' });
         throw new Error('Access restricted. Please contact administrator.');

@@ -40,13 +40,10 @@ const Header = ({ isAdmin, isCandidate, onLogout, isExamActive, onSubmitExam }) 
             {!isExamActive && isCandidate && !isAdminRoute && (
               <>
                 <Link to="/" className={navLinkClass('/')}>
-                  My Exams
-                </Link>
-                <Link to="/servicedelivery" className={navLinkClass('/servicedelivery')}>
-                  Service Delivery
+                  Dashboard
                 </Link>
                 <Link to="/profile" className={navLinkClass('/profile')}>
-                  Profile
+                  My Profile
                 </Link>
               </>
             )}

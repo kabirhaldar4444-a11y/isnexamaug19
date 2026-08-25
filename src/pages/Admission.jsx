@@ -63,7 +63,6 @@ const Admission = () => {
   const [panCard, setPanCard] = useState(null);
   const [signatureBlob, setSignatureBlob] = useState(null);
   const [profileVideo, setProfileVideo] = useState(null);
-  const [videoObjectURL, setVideoObjectURL] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -98,18 +97,6 @@ const Admission = () => {
       handlePincodeLookup(pincode);
     }
   }, [pincode]);
-
-  useEffect(() => {
-    if (profileVideo) {
-      const url = URL.createObjectURL(profileVideo);
-      setVideoObjectURL(url);
-      return () => {
-        URL.revokeObjectURL(url);
-      };
-    } else {
-      setVideoObjectURL('');
-    }
-  }, [profileVideo]);
 
   const handlePincodeLookup = async (code) => {
     setIsFetchingPincode(true);
@@ -696,25 +683,7 @@ Submitted via iSuccessNode Exam Portal
                     <div className="relative w-full flex flex-col items-center gap-6">
                       <video ref={videoRef} autoPlay playsInline muted className="w-full max-w-sm rounded-[2rem] bg-slate-900 shadow-2xl" />
                       
-                      <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6 bg-blue-50/80 p-4 md:p-6 rounded-2xl text-[14px] text-blue-900 font-bold text-left leading-relaxed border border-blue-100 shadow-sm">
-                        <div>
-                          <strong className="block mb-2 text-blue-950 uppercase tracking-wider text-[10px]">Please read aloud (English):</strong>
-                          "My name is {fullName || '[Full Name]'}, and my registered email address is {emailValue || '[Email Address]'}. I purposely recorded this video statement to verify my profile, confirm my identity, and acknowledge my enrollment in Elite Toolistic's professional training program (available at elitetoolistic.com). 
-                          <br/><br/>
-                          I am purchasing this course for personal skill enhancement, professional development, and career growth. I fully accept and understand that Elite Toolistic is only an educational skills-based course training provider and never offers a job promise, job placement assurance, or particular career assurances upon course completion.
-                          <br/><br/>
-                          Furthermore, I certify that I will not file any chargebacks or complaints regarding this transaction in the future. I also promise not to share or distribute any copyrighted course materials supplied to me throughout this program. &quot;This statement is made freely, knowingly, and without pressure.&quot;"
-                        </div>
-                        
-                        <div>
-                          <strong className="block mb-2 text-blue-950 uppercase tracking-wider text-[10px]">कृपया ज़ोर से पढ़ें (Hindi):</strong>
-                          "मेरा नाम {fullName || '[पूरा नाम]'} है और मेरा रजिस्टर्ड ईमेल एड्रेस {emailValue || '[ईमेल एड्रेस]'} है। मैंने यह वीडियो स्टेटमेंट जान-बूझकर रिकॉर्ड किया है ताकि मैं अपनी प्रोफ़ाइल वेरिफ़ाई कर सकूँ, अपनी पहचान कन्फ़र्म कर सकूँ और Elite Toolistic के प्रोफ़ेशनल ट्रेनिंग प्रोग्राम (जो elitetoolistic.com पर उपलब्ध है) में अपने एनरोलमेंट की पुष्टि कर सकूँ।
-                          <br/><br/>
-                          मैं यह कोर्स अपनी पर्सनल स्किल बढ़ाने, प्रोफ़ेशनल डेवलपमेंट और करियर में आगे बढ़ने के लिए खरीद रहा हूँ। मैं पूरी तरह से मानता और समझता हूँ कि Elite Toolistic सिर्फ़ एक एजुकेशनल स्किल-बेस्ड कोर्स ट्रेनिंग प्रोवाइडर है और कोर्स पूरा होने पर कभी भी नौकरी का वादा, नौकरी मिलने की गारंटी या किसी खास करियर की गारंटी नहीं देता है।
-                          <br/><br/>
-                          इसके अलावा, मैं यह सर्टिफ़ाई करता हूँ कि भविष्य में इस ट्रांज़ैक्शन के बारे में कोई चार्जबैक या शिकायत नहीं करूँगा। मैं यह भी वादा करता हूँ कि इस प्रोग्राम के दौरान मुझे दिए गए किसी भी कॉपीराइट वाले कोर्स मटीरियल को शेयर या डिस्ट्रीब्यूट नहीं करूँगा। &quot;यह स्टेटमेंट बिना किसी दबाव के, पूरी जानकारी के साथ और अपनी मर्ज़ी से दिया जा रहा है।&quot;"
-                        </div>
-                      </div>
+                      
 
                       {!isRecording ? (
                         <button type="button" onClick={startRecording} className="bg-rose-600 text-white font-black text-[9px] uppercase tracking-[0.3em] py-3.5 px-10 rounded-2xl shadow-xl hover:bg-rose-700 transition-all flex items-center gap-2">
@@ -732,12 +701,32 @@ Submitted via iSuccessNode Exam Portal
 
                   {profileVideo && !showCamera && (
                     <div className="relative w-full max-w-sm">
-                      <video src={videoObjectURL} controls className="w-full rounded-[2rem] shadow-2xl border-4 border-white" />
+                      <video src={URL.createObjectURL(profileVideo)} controls className="w-full rounded-[2rem] shadow-2xl border-4 border-white" />
                       <button type="button" onClick={startCamera} className="absolute -bottom-4 right-4 w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 shadow-lg z-10">
                         <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
                       </button>
                     </div>
                   )}
+
+                  <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6 bg-blue-50/80 p-4 md:p-6 rounded-2xl text-[14px] text-blue-900 font-bold text-left leading-relaxed border border-blue-100 shadow-sm mt-4">
+                    <div>
+                      <strong className="block mb-2 text-blue-950 uppercase tracking-wider text-[10px]">Please read aloud (English):</strong>
+                      "My name is {fullName || '[Full Name]'}, and my registered email address is {emailValue || '[Email Address]'}. I purposely recorded this video statement to verify my profile, confirm my identity, and acknowledge my enrollment in Elite Toolistic's professional training program (available at elitetoolistic.com). 
+                      <br/><br/>
+                      I am purchasing this course for personal skill enhancement, professional development, and career growth. I fully accept and understand that Elite Toolistic is only an educational skills-based course training provider and never offers a job promise, job placement assurance, or particular career assurances upon course completion.
+                      <br/><br/>
+                      Furthermore, I certify that I will not file any chargebacks or complaints regarding this transaction in the future. I also promise not to share or distribute any copyrighted course materials supplied to me throughout this program. &quot;This statement is made freely, knowingly, and without pressure.&quot;"
+                    </div>
+                    
+                    <div>
+                      <strong className="block mb-2 text-blue-950 uppercase tracking-wider text-[10px]">कृपया ज़ोर से पढ़ें (Hindi):</strong>
+                      "मेरा नाम {fullName || '[पूरा नाम]'} है और मेरा रजिस्टर्ड ईमेल एड्रेस {emailValue || '[ईमेल एड्रेस]'} है। मैंने यह वीडियो स्टेटमेंट जान-बूझकर रिकॉर्ड किया है ताकि मैं अपनी प्रोफ़ाइल वेरिफ़ाई कर सकूँ, अपनी पहचान कन्फ़र्म कर सकूँ और Elite Toolistic के प्रोफ़ेशनल ट्रेनिंग प्रोग्राम (जो elitetoolistic.com पर उपलब्ध है) में अपने एनरोलमेंट की पुष्टि कर सकूँ।
+                      <br/><br/>
+                      मैं यह कोर्स अपनी पर्सनल स्किल बढ़ाने, प्रोफ़ेशनल डेवलपमेंट और करियर में आगे बढ़ने के लिए खरीद रहा हूँ। मैं पूरी तरह से मानता और समझता हूँ कि Elite Toolistic सिर्फ़ एक एजुकेशनल स्किल-बेस्ड कोर्स ट्रेनिंग प्रोवाइडर है और कोर्स पूरा होने पर कभी भी नौकरी का वादा, नौकरी मिलने की गारंटी या किसी खास करियर की गारंटी नहीं देता है।
+                      <br/><br/>
+                      इसके अलावा, मैं यह सर्टिफ़ाई करता हूँ कि भविष्य में इस ट्रांज़ैक्शन के बारे में कोई चार्जबैक या शिकायत नहीं करूँगा। मैं यह भी वादा करता हूँ कि इस प्रोग्राम के दौरान मुझे दिए गए किसी भी कॉपीराइट वाले कोर्स मटीरियल को शेयर या डिस्ट्रीब्यूट नहीं करूँगा। &quot;यह स्टेटमेंट बिना किसी दबाव के, पूरी जानकारी के साथ और अपनी मर्ज़ी से दिया जा रहा है।&quot;"
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -859,6 +848,67 @@ Submitted via iSuccessNode Exam Portal
                     <div className="space-y-4">
                       <h4 className="font-black text-slate-900 uppercase text-[10px] tracking-widest">4. Limitation of Liability</h4>
                       <p>The Portal shall not be held responsible for technical failures on the Candidate’s end, including but not limited to internet connectivity issues, hardware malfunctions, or power outages during the examination session.</p>
+                    </div>
+
+                    <div className="space-y-4 pt-4 border-t border-slate-200">
+                      <h4 className="font-black text-slate-900 uppercase text-[10px] tracking-widest">FINAL DECLARATION & FULL AGREEMENT</h4>
+                      <h5 className="font-bold text-slate-800 text-[11px] mt-2">SERVICE DELIVERY:</h5>
+                      <ul className="space-y-2 pl-4 list-disc marker:text-slate-400">
+                        <li><strong>Enrollment Process:</strong> Customers visit the iSuccessNode website and fill out the Enrollment Form. After form submission, Our team connects with the customer.</li>
+                        <li><strong>Process Flow:</strong> A detailed email is shared explaining the complete process flow and fee structure. Payments may also be accepted directly through an authorized professional expert trainer account, where applicable.</li>
+                        <li><strong>Explanation:</strong> During the call, the team explains the course structure, learning journey, and assessment-to-certification flow. Customer then confirms participation.</li>
+                        <li><strong>Fee Payment:</strong> Upon completion, a GST-compliant invoice is issued within 6 hours. Study materials are shared within 24h.</li>
+                        <li><strong>Pre-Exam:</strong> Conducted within 24–48 hours of fee payment to assess initial understanding. Results shared within 24–48h.</li>
+                        <li><strong>Certificate:</strong> A Pre-Board Professional Certificate is issued with "Under Training" mentioned.</li>
+                        <li><strong>Reward:</strong> Customers scoring above 80% become eligible for a gift from four available options.</li>
+                        <li><strong>Training:</strong> Access to recorded video lectures within 15 days. Duration is 90–120 days.</li>
+                        <li><strong>Final Exam:</strong> Conducted between 90-120 days.</li>
+                        <li><strong>Final Certificate:</strong> Issued upon successful completion, clearly stating status as "Certified."</li>
+                        <li><strong>Support:</strong> Team remains in contact for guidance throughout.</li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h5 className="font-bold text-slate-800 text-[11px]">TERMS & CONDITIONS:</h5>
+                      <ul className="space-y-2 pl-4 list-disc marker:text-slate-400">
+                        <li><strong>Delivery:</strong> Complete course delivered within 90-120 days.</li>
+                        <li><strong>Access:</strong> Invoice, materials, and videos within 10 working days.</li>
+                        <li><strong>Exams:</strong> Pre-Board (24-48h) and Final (90-120 days) attempts.</li>
+                        <li><strong>Certification:</strong> Final PC Softcopy indicates "Successfully Certified." Abbreviation format used (e.g., "RCT" for Resilience Coach Training).</li>
+                        <li><strong>Training Format:</strong> No live sessions. Materials shared once via email and are non-transferable.</li>
+                        <li><strong>Exam Policy:</strong> Multiple attempts are NOT permitted for any exam.</li>
+                        <li><strong>Rewards:</strong> 80%+ scorers eligible for gifts worth 50k-100k. Consent required for promotional use of photograph.</li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h5 className="font-bold text-slate-800 text-[11px]">PRIVACY POLICY:</h5>
+                      <ul className="space-y-2 pl-4 list-disc marker:text-slate-400">
+                        <li><strong>Information We Collect:</strong> Personal, payment, course progress, and technical data (IP, device info).</li>
+                        <li><strong>Usage:</strong> To process enrollment, provide access, communicate, and improve services. We do NOT sell data.</li>
+                        <li><strong>Data Security:</strong> Stored securely in encrypted databases. Only authorized personnel have access.</li>
+                        <li><strong>Retention & Rights:</strong> Data retained as necessary. Candidates can request access, correction, or deletion via support.</li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h5 className="font-bold text-slate-800 text-[11px]">REFUND POLICY:</h5>
+                      <ul className="space-y-2 pl-4 list-disc marker:text-slate-400">
+                        <li><strong>No Refund:</strong> Not applicable after attempting any exam (Pre-Board or Final).</li>
+                        <li><strong>90% Refund:</strong> Applicable ONLY before attempting any exam and if requested within 24 hours of payment.</li>
+                        <li><strong>Deductions:</strong> A 10% deduction applies to all approved refunds to cover administrative and content access costs.</li>
+                        <li><strong>Procedure:</strong> Written request via support@isuccessnode.com including full credentials and receipt.</li>
+                        <li><strong>Non-Refundable Cases:</strong> Partial completion, delayed progress, accessed content, or general dissatisfaction.</li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h5 className="font-bold text-slate-800 text-[11px]">LEGAL NOTICE:</h5>
+                      <ul className="space-y-2 pl-4 list-disc marker:text-slate-400">
+                        <li><strong>Independent Org:</strong> I-SUCCESSNODE (OPC) PVT. LTD. is an independent entity not affiliated with other bodies.</li>
+                        <li><strong>Employment:</strong> Programs are for skill development only; NO guarantee of job placement or financial gain.</li>
+                        <li><strong>Third-Party:</strong> No liability for losses from third-party recommendations or representations.</li>
+                      </ul>
                     </div>
                   </div>
 

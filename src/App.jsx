@@ -10,8 +10,6 @@ import Users from './pages/admin/Users';
 import CreateUser from './components/admin/CreateUser';
 import EditUser from './components/admin/EditUser';
 import CompleteProfile from './pages/candidate/CompleteProfile';
-import ServiceDelivery from './pages/candidate/ServiceDelivery';
-import ServiceDeliveryManager from './pages/admin/ServiceDeliveryManager';
 import Admission from './pages/Admission';
 import Recovery from './pages/Recovery';
 import supabase from './utils/supabase';
@@ -228,7 +226,6 @@ function App() {
           <Route path="/" element={
             !user ? <Navigate to="/login" /> :
             profile?.role === 'candidate' ? (
-              !profile?.profile_completed ? <Navigate to="/complete-profile" /> :
               activeExam ? (
                 <ExamPortal exam={activeExam} onFinish={() => setActiveExam(null)} submitSignal={submitSignal} user={user} />
               ) : (
@@ -248,11 +245,7 @@ function App() {
             )
           } />
 
-          <Route path="/complete-profile" element={
-            profile?.role === 'candidate' ? (
-              profile?.profile_completed ? <Navigate to="/" /> : <CompleteProfile profile={profile} user={user} onComplete={checkAuth} />
-            ) : <Navigate to="/login" />
-          } />
+          <Route path="/complete-profile" element={<Navigate to="/" />} />
 
           <Route path="/recovery" element={<Recovery />} />
 
@@ -282,20 +275,6 @@ function App() {
           <Route path="/admin/users/edit/:id" element={
             profile?.role === 'admin' ? (
               <EditUser user={user} profile={profile} />
-            ) : <Navigate to="/login" />
-          } />
-
-          <Route path="/servicedelivery" element={
-            profile?.role === 'candidate' ? (
-              profile?.profile_completed ? (
-                <ServiceDelivery profile={profile} user={user} />
-              ) : <Navigate to="/complete-profile" />
-            ) : <Navigate to="/login" />
-          } />
-
-          <Route path="/admin/users/servicedelivery/:id" element={
-            profile?.role === 'admin' ? (
-              <ServiceDeliveryManager user={user} profile={profile} />
             ) : <Navigate to="/login" />
           } />
           

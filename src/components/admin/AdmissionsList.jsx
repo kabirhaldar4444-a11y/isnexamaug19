@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import supabase from '../../utils/supabase';
-import { useToast } from '../common/AlertProvider';
+import { useToast, useConfirm } from '../common/AlertProvider';
 
-const AdmissionsList = ({ user, profile }) => {
+const AdmissionsList = ({ user, profile, searchQuery = '' }) => {
   const [admissions, setAdmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
   const [selectedAdmission, setSelectedAdmission] = useState(null);
   const [password, setPassword] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [createdUserDetails, setCreatedUserDetails] = useState(null);
   const toast = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => {
     fetchAdmissions();
@@ -66,13 +65,8 @@ const AdmissionsList = ({ user, profile }) => {
 
       toast(`Admission for ${selectedAdmission.full_name} accepted and user created!`, 'success');
       
-      // Store the details to show in custom modal instead of alert
-      setCreatedUserDetails({
-        fullName: selectedAdmission.full_name,
-        email: selectedAdmission.email,
-        password: password,
-        courseName: selectedAdmission.course_name
-      });
+      // Optionally show the password to the admin so they can email it to the user.
+      alert(`User Created!\nEmail: ${selectedAdmission.email}\nPassword: ${password}\n\nPlease share this password securely with the user.`);
       
       fetchAdmissions();
     } catch (err) {
@@ -83,6 +77,40 @@ const AdmissionsList = ({ user, profile }) => {
       setSelectedAdmission(null);
     }
   };
+
+  const handleRejectClick = async (admission) => {
+    const isConfirmed = await confirm({
+      title: 'Reject Admission',
+      message: `Are you sure you want to reject the admission for "${admission.full_name}"? This action cannot be undone.`,
+      type: 'error',
+      confirmText: 'Reject'
+    });
+    
+    if (isConfirmed) {
+      setProcessingId(admission.id);
+      try {
+        const { error } = await supabase
+          .from('admissions')
+          .update({ status: 'rejected' })
+          .eq('id', admission.id);
+          
+        if (error) throw error;
+        toast('Admission rejected successfully.', 'success');
+        fetchAdmissions();
+      } catch (err) {
+        console.error('Error rejecting admission:', err);
+        toast('Failed to reject admission.', 'error');
+      } finally {
+        setProcessingId(null);
+      }
+    }
+  };
+
+  const filteredAdmissions = admissions.filter(a => 
+    (a.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (a.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (a.phone || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -111,7 +139,7 @@ const AdmissionsList = ({ user, profile }) => {
         </button>
       </div>
 
-      {admissions.length === 0 ? (
+      {filteredAdmissions.length === 0 ? (
         <div className="bg-white rounded-[2rem] border border-slate-200 p-12 text-center flex flex-col items-center">
           <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mb-4">
             <svg width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" /></svg>
@@ -121,7 +149,7 @@ const AdmissionsList = ({ user, profile }) => {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
-          {admissions.map(admission => (
+          {filteredAdmissions.map(admission => (
             <div key={admission.id} className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
               
               <div className="flex flex-col md:flex-row gap-6 md:items-start justify-between relative z-10">
@@ -157,7 +185,7 @@ const AdmissionsList = ({ user, profile }) => {
                   </div>
                 </div>
 
-                <div className="shrink-0 flex items-start self-start md:self-center w-full md:w-auto mt-4 md:mt-0">
+                <div className="shrink-0 flex flex-col items-center self-start md:self-center w-full md:w-auto mt-4 md:mt-0 gap-3">
                   <button
                     onClick={() => handleAcceptClick(admission)}
                     disabled={processingId === admission.id}
@@ -172,6 +200,14 @@ const AdmissionsList = ({ user, profile }) => {
                       </>
                     )}
                   </button>
+                  <button
+                    onClick={() => handleRejectClick(admission)}
+                    disabled={processingId === admission.id}
+                    className="w-full md:w-auto bg-white text-rose-500 border border-rose-100 px-8 py-3 rounded-xl font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-rose-50 hover:border-rose-200 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    Reject Application
+                  </button>
                 </div>
               </div>
             </div>
@@ -180,9 +216,9 @@ const AdmissionsList = ({ user, profile }) => {
       )}
 
       {/* Password Modal */}
-      {showPasswordModal && selectedAdmission && createPortal(
+      {showPasswordModal && selectedAdmission && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative animate-slide-up border border-slate-100">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative">
             <button 
               onClick={() => setShowPasswordModal(false)}
               className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition-colors"
@@ -191,7 +227,7 @@ const AdmissionsList = ({ user, profile }) => {
             </button>
 
             <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6">
-              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
+              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
             </div>
 
             <h3 className="text-xl font-bold text-slate-900 mb-2">Create Candidate Account</h3>
@@ -233,77 +269,7 @@ const AdmissionsList = ({ user, profile }) => {
               </button>
             </div>
           </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Credentials Created Modal */}
-      {createdUserDetails && createPortal(
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative border border-slate-100 animate-slide-up">
-            <button 
-              onClick={() => setCreatedUserDetails(null)}
-              className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition-colors"
-            >
-              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-
-            <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-50">
-              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-
-            <h3 className="text-xl font-bold text-slate-900 mb-2">Account Created Successfully!</h3>
-            <p className="text-sm text-slate-500 mb-6">
-              The candidate has been accepted and their login credentials have been created. Please share these details with them securely.
-            </p>
-
-            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4 mb-8">
-              <div>
-                <span className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Name</span>
-                <span className="text-sm font-bold text-slate-900">{createdUserDetails.fullName}</span>
-              </div>
-              <div>
-                <span className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Email / Username</span>
-                <span className="text-sm font-bold text-slate-900 select-all">{createdUserDetails.email}</span>
-              </div>
-              <div>
-                <span className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Password</span>
-                <span className="text-sm font-mono font-bold text-indigo-600 bg-indigo-50/50 px-2.5 py-1 rounded-lg border border-indigo-100/50 select-all">{createdUserDetails.password}</span>
-              </div>
-              <div>
-                <span className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Course</span>
-                <span className="text-sm font-bold text-slate-900">{createdUserDetails.courseName || 'N/A'}</span>
-              </div>
-              <div>
-                <span className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Portal URL</span>
-                <span className="text-xs font-bold text-slate-500 underline select-all">{window.location.origin}/login</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <button 
-                onClick={() => {
-                  const copyText = `Candidate Credentials\n--------------------\nName: ${createdUserDetails.fullName}\nEmail/Username: ${createdUserDetails.email}\nPassword: ${createdUserDetails.password}\nCourse: ${createdUserDetails.courseName || 'N/A'}\n\nPortal URL: ${window.location.origin}/login\n\nPlease login and complete your dashboard.`;
-                  navigator.clipboard.writeText(copyText);
-                  toast('Credentials copied to clipboard!', 'success');
-                }}
-                className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-slate-200 flex items-center justify-center gap-2"
-              >
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H5.25m4 3H18a1.125 1.125 0 011.125 1.125v12.125c0 .621-.504 1.125-1.125 1.125H10.125A1.125 1.125 0 019 23.625V17.25z" /></svg>
-                Copy All Credentials
-              </button>
-              <button 
-                onClick={() => setCreatedUserDetails(null)}
-                className="w-full py-4 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors flex items-center justify-center"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
+        </div>
       )}
     </div>
   );

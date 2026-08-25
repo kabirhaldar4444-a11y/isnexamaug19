@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import supabase from '../../utils/supabase';
-import DisclaimerOverlay from '../DisclaimerOverlay';
+
 
 const CandidateDashboard = ({ exams, onStartExam, profile, user }) => {
   const [submissions, setSubmissions] = useState([]);
@@ -61,7 +61,7 @@ const CandidateDashboard = ({ exams, onStartExam, profile, user }) => {
 
   return (
     <>
-    <DisclaimerOverlay user={user} profile={profile} />
+
     <div className="min-h-screen bg-slate-50/50 p-6 md:p-10 font-sans selection:bg-slate-100">
       <div className="max-w-6xl mx-auto animate-fade-in">
         

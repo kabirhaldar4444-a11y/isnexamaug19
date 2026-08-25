@@ -224,7 +224,7 @@ const AdminDashboard = ({ user, profile, exams, addExam, deleteExam, onRefresh }
             </div>
           ) : activeTab === 'admissions' ? (
             <div className="animate-slide-up">
-              <AdmissionsList user={user} profile={profile} />
+              <AdmissionsList user={user} profile={profile} searchQuery={searchQuery} />
             </div>
           ) : (
             <div className="animate-slide-up">
