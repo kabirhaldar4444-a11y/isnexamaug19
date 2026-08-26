@@ -75,6 +75,20 @@ const CompleteProfile = ({ profile, user, onComplete }) => {
 
   const availableCities = selectedState ? INDIA_STATES_CITIES[selectedState] || [] : [];
 
+  const [videoObjectUrl, setVideoObjectUrl] = useState('');
+
+  useEffect(() => {
+    if (profileVideo) {
+      const url = URL.createObjectURL(profileVideo);
+      setVideoObjectUrl(url);
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } else {
+      setVideoObjectUrl('');
+    }
+  }, [profileVideo]);
+
   useEffect(() => {
     // Auto-fetch IP on mount for security audit
     const fetchIP = async () => {
@@ -87,7 +101,9 @@ const CompleteProfile = ({ profile, user, onComplete }) => {
       }
     };
     fetchIP();
+  }, []);
 
+  useEffect(() => {
     if (pincode.length === 6) {
       handlePincodeLookup(pincode);
     }
@@ -603,7 +619,7 @@ Submitted via iSuccessNode Exam Portal
 
                   {profileVideo && !showCamera && (
                     <div className="relative w-full max-w-sm">
-                      <video src={URL.createObjectURL(profileVideo)} controls className="w-full rounded-[2rem] shadow-2xl border-4 border-white" />
+                      <video src={videoObjectUrl} controls className="w-full rounded-[2rem] shadow-2xl border-4 border-white" />
                       <button type="button" onClick={startCamera} className="absolute -bottom-4 right-4 w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 shadow-lg z-10">
                         <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
                       </button>
