@@ -12,6 +12,7 @@ import EditUser from './components/admin/EditUser';
 import CompleteProfile from './pages/candidate/CompleteProfile';
 import Admission from './pages/Admission';
 import Recovery from './pages/Recovery';
+import ServiceDeliveryManager from './pages/admin/ServiceDeliveryManager';
 import supabase from './utils/supabase';
 import { useToast } from './components/common/AlertProvider';
 import './index.css';
@@ -275,6 +276,12 @@ function App() {
           <Route path="/admin/users/edit/:id" element={
             profile?.role === 'admin' ? (
               <EditUser user={user} profile={profile} />
+            ) : <Navigate to="/login" />
+          } />
+
+          <Route path="/admin/users/service-delivery/:id" element={
+            profile?.role === 'admin' ? (
+              <ServiceDeliveryManager user={user} profile={profile} />
             ) : <Navigate to="/login" />
           } />
           

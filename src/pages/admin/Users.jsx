@@ -284,6 +284,15 @@ const Users = ({ user, profile: activeProfile }) => {
                         >
                           <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                         </button>
+                        {u.role !== 'admin' && (
+                          <button
+                            onClick={() => navigate(`/admin/users/service-delivery/${u.id}`)}
+                            className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 text-slate-400 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all duration-300 flex items-center justify-center shadow-sm"
+                            title="Service Delivery Milestones"
+                          >
+                            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                          </button>
+                        )}
                         <button
                           onClick={() => navigate(`/admin/users/edit/${u.id}`)}
                           className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 text-slate-400 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all duration-300 flex items-center justify-center shadow-sm"
@@ -543,9 +552,20 @@ const Users = ({ user, profile: activeProfile }) => {
                 </div>
                 <div className="flex-1 space-y-8">
                   <div className="flex flex-col gap-4">
-                    <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-xl bg-slate-900 text-white text-[9px] font-black uppercase tracking-[0.2em] w-fit shadow-xl shadow-slate-200">
-                      <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                      Identification Data
+                    <div className="flex flex-wrap items-center gap-4">
+                      <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-xl bg-slate-900 text-white text-[9px] font-black uppercase tracking-[0.2em] w-fit shadow-xl shadow-slate-200">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Identification Data
+                      </div>
+                      {selectedUser.role !== 'admin' && (
+                        <button
+                          onClick={() => navigate(`/admin/users/service-delivery/${selectedUser.id}`)}
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-1.5 px-4 rounded-xl shadow-md shadow-emerald-100/50 hover:shadow-emerald-200/50 transition-all active:scale-[0.98] text-[9px] uppercase tracking-widest flex items-center gap-2 w-fit"
+                        >
+                          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                          Service Milestones
+                        </button>
+                      )}
                     </div>
                     <h3 className="text-4xl font-bold tracking-tight text-slate-900">{selectedUser.full_name}</h3>
                   </div>
