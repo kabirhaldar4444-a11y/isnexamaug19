@@ -44,6 +44,37 @@ const INDIA_STATES_CITIES = {
 
 const STATES = Object.keys(INDIA_STATES_CITIES);
 
+const FilePreview = ({ file }) => {
+  const [previewUrl, setPreviewUrl] = useState('');
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl('');
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  if (!previewUrl) return null;
+  return (
+    <div className="absolute inset-0 w-full h-full rounded-3xl overflow-hidden z-0">
+      <img 
+        src={previewUrl} 
+        alt="Preview" 
+        className="w-full h-full object-cover" 
+      />
+      <div className="absolute bottom-0 left-0 right-0 bg-slate-900/60 backdrop-blur-sm px-4 py-2 text-left flex items-center justify-between gap-2 z-10">
+        <span className="text-[9px] font-bold text-white truncate max-w-[80%]">{file.name}</span>
+        <div className="text-emerald-400 shrink-0">
+          <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 01.414 0z" clipRule="evenodd" /></svg>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Admission = () => {
   const [step, setStep] = useState(1); // 1 = Initial Form, 2 = KYC Form, 3 = Success
 
@@ -808,12 +839,24 @@ Submitted via iSuccessNode Exam Portal
                     <div key={label} className="space-y-4">
                       <label className={labelClass.replace('text-slate-900', 'text-slate-400')}>{label}</label>
                       <div className="relative h-40 group/file">
-                        <input type="file" accept="image/*" onChange={e => setter(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" />
+                        <input type="file" accept="image/*" onChange={e => setter(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20" />
                         <div className={`h-full rounded-3xl border border-dashed flex flex-col items-center justify-center transition-all duration-500 px-6 text-center ${state ? 'border-indigo-500 bg-indigo-50/20 text-indigo-600' : 'border-slate-200 bg-white group-hover/file:border-indigo-300 shadow-sm'}`}>
-                          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-3 transition-colors ${state ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-300'}`}>
-                            {state ? <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 01.414 0z" clipRule="evenodd" /></svg> : <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>}
-                          </div>
-                          <span className="text-[9px] font-black uppercase tracking-widest truncate w-full">{state ? state.name : 'Upload File'}</span>
+                          {state ? (
+                            <>
+                              <FilePreview file={state} />
+                              <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover/file:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center text-white p-4 rounded-3xl z-10">
+                                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="mb-2"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                                <span className="text-[10px] font-black uppercase tracking-widest">Change File</span>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-10 h-10 rounded-2xl flex items-center justify-center mb-3 bg-slate-50 text-slate-300">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+                              </div>
+                              <span className="text-[9px] font-black uppercase tracking-widest truncate w-full">Upload File</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
