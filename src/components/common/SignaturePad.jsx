@@ -15,33 +15,36 @@ const SignaturePad = ({ onSave, onClear, placeholder }) => {
     onClearRef.current = onClear;
   }, [onSave, onClear]);
 
-  // Set canvas dimensions based on display size
+  // Set canvas dimensions dynamically based on element size changes (using ResizeObserver)
+  // This is highly robust in production when stylesheets load asynchronously or layouts change.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const resizeCanvas = () => {
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      
-      // Only resize if the dimensions have actually changed, to avoid resetting drawings unnecessarily
-      if (canvas.width === rect.width * dpr && canvas.height === rect.height * dpr) {
-        return;
-      }
-      
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      const ctx = canvas.getContext('2d');
-      ctx.scale(dpr, dpr);
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.strokeStyle = '#2563eb'; // blue-600
-      ctx.lineWidth = 2.5;
-    };
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        
+        const targetWidth = Math.round(rect.width * dpr);
+        const targetHeight = Math.round(rect.height * dpr);
 
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-    return () => window.removeEventListener('resize', resizeCanvas);
+        // Only update if dimensions actually changed (prevent unnecessary resets)
+        if (canvas.width === targetWidth && canvas.height === targetHeight) {
+          continue;
+        }
+        
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        
+        // Reset scale context
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+      }
+    });
+
+    resizeObserver.observe(canvas);
+    return () => resizeObserver.disconnect();
   }, []);
 
   const getCoordinates = (e) => {
@@ -68,12 +71,23 @@ const SignaturePad = ({ onSave, onClear, placeholder }) => {
     };
   };
 
+  const setupContext = (ctx) => {
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#2563eb'; // blue-600
+    ctx.lineWidth = 2.5;
+  };
+
   const startDrawing = (e) => {
-    e.preventDefault();
+    if (e.cancelable) {
+      e.preventDefault();
+    }
     const { x, y } = getCoordinates(e);
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    
+    setupContext(ctx);
     ctx.beginPath();
     ctx.moveTo(x, y);
     isDrawingRef.current = true;
@@ -81,11 +95,15 @@ const SignaturePad = ({ onSave, onClear, placeholder }) => {
 
   const draw = (e) => {
     if (!isDrawingRef.current) return;
-    e.preventDefault();
+    if (e.cancelable) {
+      e.preventDefault();
+    }
     const { x, y } = getCoordinates(e);
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    
+    setupContext(ctx);
     ctx.lineTo(x, y);
     ctx.stroke();
     
@@ -126,32 +144,41 @@ const SignaturePad = ({ onSave, onClear, placeholder }) => {
     if (onSaveRef.current) onSaveRef.current(null);
   };
 
-  // Attach touch events imperatively with passive: false to allow e.preventDefault()
-  // to successfully block touch gestures and page scrolling while drawing.
+  // Bind touch and pointer events imperatively with passive: false to allow e.preventDefault()
+  // to block browser gestures and page scrolling while drawing.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const handleTouchStart = (e) => {
-      startDrawing(e);
-    };
+    // Touch events
+    const handleTouchStart = (e) => startDrawing(e);
+    const handleTouchMove = (e) => draw(e);
+    const handleTouchEnd = () => stopDrawing();
 
-    const handleTouchMove = (e) => {
-      draw(e);
-    };
-
-    const handleTouchEnd = (e) => {
-      stopDrawing();
-    };
+    // Pointer events (handles unified stylus/mouse/touch inputs)
+    const handlePointerDown = (e) => startDrawing(e);
+    const handlePointerMove = (e) => draw(e);
+    const handlePointerUp = () => stopDrawing();
+    const handlePointerLeave = () => stopDrawing();
 
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
     canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
     canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
 
+    canvas.addEventListener('pointerdown', handlePointerDown, { passive: false });
+    canvas.addEventListener('pointermove', handlePointerMove, { passive: false });
+    canvas.addEventListener('pointerup', handlePointerUp, { passive: false });
+    canvas.addEventListener('pointerleave', handlePointerLeave, { passive: false });
+
     return () => {
       canvas.removeEventListener('touchstart', handleTouchStart);
       canvas.removeEventListener('touchmove', handleTouchMove);
       canvas.removeEventListener('touchend', handleTouchEnd);
+
+      canvas.removeEventListener('pointerdown', handlePointerDown);
+      canvas.removeEventListener('pointermove', handlePointerMove);
+      canvas.removeEventListener('pointerup', handlePointerUp);
+      canvas.removeEventListener('pointerleave', handlePointerLeave);
     };
   }, [hasContentState]);
 
@@ -179,11 +206,8 @@ const SignaturePad = ({ onSave, onClear, placeholder }) => {
       <div className="relative group">
         <canvas
           ref={canvasRef}
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
-          className="w-full h-40 bg-white rounded-2xl border-2 border-dashed border-slate-200 cursor-crosshair transition-all hover:border-primary-400 touch-none shadow-inner"
+          style={{ touchAction: 'none' }}
+          className="w-full h-40 bg-white rounded-2xl border-2 border-dashed border-slate-200 cursor-crosshair transition-all hover:border-primary-400 shadow-inner"
         />
         {!hasContentState && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
