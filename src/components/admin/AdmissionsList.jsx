@@ -165,7 +165,7 @@ const AdmissionsList = ({ user, profile, searchQuery = '' }) => {
                   </div>
                   <div>
                     <h3 className="text-lg font-black text-slate-900">{admission.full_name}</h3>
-                    <p className="text-sm font-medium text-slate-500 mb-3">{admission.email} • {admission.phone}</p>
+                    <p className="text-sm font-medium text-slate-500 mb-3">{admission.email}{admission.phone ? ` • ${admission.phone}` : ''}</p>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm text-slate-600">
                       <div><span className="font-semibold text-slate-400 uppercase text-[10px] tracking-wider block mb-1">Course</span> {admission.course_name || 'N/A'}</div>
