@@ -50,9 +50,34 @@ const CandidateDashboard = ({ exams, onStartExam, profile, user }) => {
     setLoadingResults(false);
   };
 
+  const [extraExams, setExtraExams] = useState([]);
+
+  useEffect(() => {
+    if (!profile?.allotted_exam_ids || profile.allotted_exam_ids.length === 0) return;
+    const knownIds = new Set(exams.map(e => e.id));
+    const missingIds = profile.allotted_exam_ids.filter(id => !knownIds.has(id));
+    if (missingIds.length > 0) {
+      supabase
+        .from('exams')
+        .select('*')
+        .in('id', missingIds)
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setExtraExams(data);
+          }
+        });
+    }
+  }, [profile?.allotted_exam_ids, exams]);
+
+  const allAvailableExamsList = React.useMemo(() => {
+    if (!extraExams.length) return exams;
+    const knownIds = new Set(exams.map(e => e.id));
+    return [...exams, ...extraExams.filter(e => !knownIds.has(e.id))];
+  }, [exams, extraExams]);
+
   const completedExamIds = submissions.map(s => s.exam_id);
   const allottedExamIds = profile?.allotted_exam_ids || [];
-  const availableExams = exams.filter(e => 
+  const availableExams = allAvailableExamsList.filter(e => 
     allottedExamIds.includes(e.id) && !completedExamIds.includes(e.id)
   );
   const filteredExams = availableExams.filter(e =>

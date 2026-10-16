@@ -37,14 +37,57 @@ const DocumentPreview = ({ title, url }) => {
   );
 };
 
-const SmartExamSelector = ({ exams, selectedIds, onToggle }) => {
+const SmartExamSelector = ({ exams, selectedIds, onToggle, onAddDiscoveredExams }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [isSearchingServer, setIsSearchingServer] = useState(false);
+  const [visibleLimit, setVisibleLimit] = useState(80);
   
-  const selectedExams = exams.filter(e => selectedIds.includes(e.id));
-  const filteredExams = exams.filter(e => 
-    e.title.toLowerCase().includes(search.toLowerCase())
-  );
+  // Safe mapping of selected exams so pills render even if titles are loading
+  const selectedExams = (selectedIds || []).map(id => {
+    const found = exams.find(e => e.id === id);
+    return found || { id, title: `Exam (${id.substring(0, 8)}...)` };
+  });
+
+  const cleanSearch = search.trim().toLowerCase();
+
+  // Dynamic server search fallback to ensure newly added exams or large catalogs are always discovered
+  useEffect(() => {
+    const query = search.trim();
+    if (!query || query.length < 2) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsSearchingServer(true);
+        const { data, error } = await supabase
+          .from('exams')
+          .select('id, title')
+          .ilike('title', `%${query}%`)
+          .limit(50);
+        if (data && data.length > 0 && onAddDiscoveredExams) {
+          onAddDiscoveredExams(data);
+        }
+      } catch (err) {
+        console.error('Dynamic exam search error:', err);
+      } finally {
+        setIsSearchingServer(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [search, onAddDiscoveredExams]);
+
+  useEffect(() => {
+    setVisibleLimit(80);
+  }, [search]);
+
+  const filteredExams = cleanSearch
+    ? exams.filter(e => e.title && e.title.toLowerCase().includes(cleanSearch))
+    : exams;
+
+  const displayedExams = cleanSearch 
+    ? filteredExams 
+    : filteredExams.slice(0, visibleLimit);
 
   return (
     <div className={`relative w-full transition-all duration-300 ${isOpen ? 'z-[1000]' : 'z-20'}`}>
@@ -110,13 +153,22 @@ const SmartExamSelector = ({ exams, selectedIds, onToggle }) => {
                   autoFocus
                 />
                 <div className="absolute right-10 top-1/2 -translate-y-1/2 flex items-center gap-3">
-                   <div className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.1em] shadow-lg shadow-slate-200">Neural Search</div>
+                   {isSearchingServer ? (
+                     <div className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.1em] shadow-lg shadow-slate-200 flex items-center gap-2">
+                       <div className="w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                       Searching...
+                     </div>
+                   ) : (
+                     <div className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.1em] shadow-lg shadow-slate-200">
+                       Neural Search
+                     </div>
+                   )}
                 </div>
               </div>
 
               {/* Exam List */}
               <div className="max-h-[420px] overflow-y-auto pr-4 space-y-3 custom-scrollbar">
-                {filteredExams.length === 0 ? (
+                {displayedExams.length === 0 ? (
                   <div className="py-24 text-center space-y-4">
                     <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto text-slate-200 shadow-inner">
                        <svg width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
@@ -124,44 +176,60 @@ const SmartExamSelector = ({ exams, selectedIds, onToggle }) => {
                     <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">Zero matches in current subspace</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 gap-3">
-                    {filteredExams.map(exam => {
-                      const isSelected = selectedIds.includes(exam.id);
-                      return (
-                        <div 
-                          key={exam.id}
-                          onClick={() => onToggle(exam.id)}
-                          className={`flex items-center justify-between p-6 rounded-[2rem] cursor-pointer transition-all duration-500 group/item ${
-                            isSelected 
-                              ? 'bg-slate-900 text-white shadow-2xl shadow-slate-300 scale-[1.01]' 
-                              : 'bg-slate-50/50 border border-transparent hover:border-slate-200 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 text-slate-600 hover:text-slate-900'
-                          }`}
-                        >
-                          <div className="flex flex-col gap-1.5">
-                            <span className="text-base font-black uppercase tracking-widest">{exam.title}</span>
-                            <div className="flex items-center gap-2">
-                              <span className={`text-[10px] font-bold uppercase tracking-widest ${isSelected ? 'text-slate-400' : 'text-slate-300'}`}>
-                                {isSelected ? 'Protocol Active' : 'Access Restricted'}
-                              </span>
-                              {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />}
+                  <>
+                    <div className="grid grid-cols-1 gap-3">
+                      {displayedExams.map(exam => {
+                        const isSelected = (selectedIds || []).includes(exam.id);
+                        return (
+                          <div 
+                            key={exam.id}
+                            onClick={() => onToggle(exam.id)}
+                            className={`flex items-center justify-between p-6 rounded-[2rem] cursor-pointer transition-all duration-500 group/item ${
+                              isSelected 
+                                ? 'bg-slate-900 text-white shadow-2xl shadow-slate-300 scale-[1.01]' 
+                                : 'bg-slate-50/50 border border-transparent hover:border-slate-200 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 text-slate-600 hover:text-slate-900'
+                            }`}
+                          >
+                            <div className="flex flex-col gap-1.5">
+                              <span className="text-base font-black uppercase tracking-widest">{exam.title}</span>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[10px] font-bold uppercase tracking-widest ${isSelected ? 'text-slate-400' : 'text-slate-300'}`}>
+                                  {isSelected ? 'Protocol Active' : 'Access Restricted'}
+                                </span>
+                                {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />}
+                              </div>
+                            </div>
+                            
+                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border-2 transition-all duration-700 ${
+                              isSelected 
+                                ? 'bg-white border-white scale-110 shadow-[0_0_25px_rgba(255,255,255,0.5)]' 
+                                : 'bg-white border-slate-100 group-hover/item:border-slate-300 group-hover/item:scale-105 shadow-sm'
+                            }`}>
+                              {isSelected ? (
+                                <svg width="20" height="20" fill="none" stroke="#0f172a" strokeWidth="4" viewBox="0 0 24 24" className="animate-in zoom-in duration-300"><path d="M5 13l4 4L19 7"/></svg>
+                              ) : (
+                                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24" className="opacity-0 group-hover/item:opacity-100 transition-opacity"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                              )}
                             </div>
                           </div>
-                          
-                          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border-2 transition-all duration-700 ${
-                            isSelected 
-                              ? 'bg-white border-white scale-110 shadow-[0_0_25px_rgba(255,255,255,0.5)]' 
-                              : 'bg-white border-slate-100 group-hover/item:border-slate-300 group-hover/item:scale-105 shadow-sm'
-                          }`}>
-                            {isSelected ? (
-                              <svg width="20" height="20" fill="none" stroke="#0f172a" strokeWidth="4" viewBox="0 0 24 24" className="animate-in zoom-in duration-300"><path d="M5 13l4 4L19 7"/></svg>
-                            ) : (
-                              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24" className="opacity-0 group-hover/item:opacity-100 transition-opacity"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                    {!cleanSearch && filteredExams.length > visibleLimit && (
+                      <div className="pt-4 pb-2 text-center">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setVisibleLimit(prev => prev + 100);
+                          }}
+                          className="px-6 py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
+                        >
+                          Load More Exams ({filteredExams.length - visibleLimit} more)
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
               
@@ -258,14 +326,36 @@ const EditUser = ({ user, profile: activeProfile }) => {
     setLoading(false);
   };
 
+  const handleAddDiscoveredExams = (newExams) => {
+    setExams(prev => {
+      const existingIds = new Set(prev.map(e => e.id));
+      const toAdd = newExams.filter(e => !existingIds.has(e.id));
+      if (toAdd.length === 0) return prev;
+      return [...prev, ...toAdd];
+    });
+  };
+
   const fetchExams = async () => {
     try {
-      const { data, error } = await supabase
-        .from('exams')
-        .select('id, title')
-        .order('title');
-      if (error) throw error;
-      setExams(data || []);
+      let allExams = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('exams')
+          .select('id, title')
+          .order('title')
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allExams.push(...data);
+        }
+        if (!data || data.length < pageSize) {
+          break;
+        }
+        from += pageSize;
+      }
+      setExams(allExams);
     } catch (error) {
       console.error('Error fetching exams:', error);
     }
@@ -305,7 +395,18 @@ const EditUser = ({ user, profile: activeProfile }) => {
         new_allotted_exam_ids: editUser.allotted_exam_ids || []
       });
 
-      if (error) throw error;
+      if (error) {
+        console.warn('admin_update_candidate RPC error, attempting direct profile update fallback:', error);
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            full_name: editUser.full_name,
+            email: editUser.email,
+            allotted_exam_ids: editUser.allotted_exam_ids || []
+          })
+          .eq('id', editUser.id);
+        if (profileError) throw error;
+      }
 
       toast('Candidate profile synchronized successfully', 'success');
       navigate('/admin/users');
@@ -475,6 +576,7 @@ const EditUser = ({ user, profile: activeProfile }) => {
               exams={exams} 
               selectedIds={editUser.allotted_exam_ids} 
               onToggle={toggleExamSelection} 
+              onAddDiscoveredExams={handleAddDiscoveredExams}
             />
           </div>
 

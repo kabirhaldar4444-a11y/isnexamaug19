@@ -117,12 +117,25 @@ function App() {
 
   const fetchExams = async () => {
     try {
-      const { data, error } = await supabase
-        .from('exams')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      setExams(data || []);
+      let allExams = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('exams')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allExams.push(...data);
+        }
+        if (!data || data.length < pageSize) {
+          break;
+        }
+        from += pageSize;
+      }
+      setExams(allExams);
     } catch (err) {
       console.error('Fetch Exams Exception:', err);
     }
