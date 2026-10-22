@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import supabase from '../../utils/supabase';
 import { useToast, useConfirm } from '../common/AlertProvider';
 
@@ -15,6 +16,22 @@ const AdmissionsList = ({ user, profile, searchQuery = '' }) => {
   useEffect(() => {
     fetchAdmissions();
   }, []);
+
+  useEffect(() => {
+    if (!showPasswordModal) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setShowPasswordModal(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showPasswordModal]);
 
   const fetchAdmissions = async () => {
     try {
@@ -284,22 +301,31 @@ const AdmissionsList = ({ user, profile, searchQuery = '' }) => {
       )}
 
       {/* Password Modal */}
-      {showPasswordModal && selectedAdmission && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative">
+      {showPasswordModal && selectedAdmission && createPortal(
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowPasswordModal(false);
+          }}
+          className="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fade-in"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh' }}
+        >
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative scale-in-center border border-slate-100 my-auto">
             <button 
+              type="button"
               onClick={() => setShowPasswordModal(false)}
-              className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition-colors"
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 p-2 rounded-xl hover:bg-slate-50 transition-colors"
             >
-              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
 
-            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6">
+            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
               <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
             </div>
 
             <h3 className="text-xl font-bold text-slate-900 mb-2">Create Candidate Account</h3>
-            <p className="text-sm text-slate-500 mb-6">Set a password for <span className="font-semibold text-slate-900">{selectedAdmission.full_name}</span>. They will use this password to log in.</p>
+            <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+              Set a password for <span className="font-semibold text-slate-900">{selectedAdmission.full_name}</span>. They will use this password to log in.
+            </p>
 
             <div className="space-y-4 mb-8">
               <div>
@@ -309,12 +335,14 @@ const AdmissionsList = ({ user, profile, searchQuery = '' }) => {
                     type="text"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium text-slate-900 pr-12 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all"
+                    className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 pr-12 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all font-mono"
+                    placeholder="Enter or generate password"
                   />
                   <button 
+                    type="button"
                     onClick={generatePassword}
-                    className="absolute right-2 p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition-all"
-                    title="Generate Password"
+                    className="absolute right-2 p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-200/60 rounded-lg transition-all"
+                    title="Generate New Password"
                   >
                     <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
                   </button>
@@ -324,20 +352,23 @@ const AdmissionsList = ({ user, profile, searchQuery = '' }) => {
 
             <div className="flex gap-3">
               <button 
+                type="button"
                 onClick={() => setShowPasswordModal(false)}
-                className="flex-1 py-4 bg-slate-50 hover:bg-slate-100 text-slate-900 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors"
+                className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200/80 text-slate-700 rounded-xl font-black text-[11px] uppercase tracking-widest transition-colors"
               >
                 Cancel
               </button>
               <button 
+                type="button"
                 onClick={confirmAccept}
-                className="flex-[2] py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-lg shadow-slate-200"
+                className="flex-[2] py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-[11px] uppercase tracking-[0.15em] transition-all shadow-lg shadow-slate-900/20 active:scale-95"
               >
                 Create Account
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
