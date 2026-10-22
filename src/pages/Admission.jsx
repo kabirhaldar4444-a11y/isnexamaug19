@@ -755,9 +755,10 @@ Submitted via iSuccessNode Exam Portal
 `;
 
       const formData = new FormData();
-      formData.append("access_key", "1c05310c-d9e8-4686-95a2-8bde58311e7d");
+      formData.append("access_key", import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || "1c05310c-d9e8-4686-95a2-8bde58311e7d");
       formData.append("name", fullName || "New Candidate");
       formData.append("email", candidateData.email);
+      formData.append("replyto", candidateData.email);
       formData.append("subject", `Admission Form Submitted — ${fullName || 'New Candidate'}`);
       formData.append("from_name", "iSuccessNode Exam Portal");
       formData.append("message", emailMessage);
