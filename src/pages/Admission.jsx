@@ -93,6 +93,8 @@ const Admission = () => {
   const [panCard, setPanCard] = useState(null);
   const [signatureBlob, setSignatureBlob] = useState(null);
   const [profileVideo, setProfileVideo] = useState(null);
+  const [capturedPhotoBlob, setCapturedPhotoBlob] = useState(null);
+  const [capturedPhotoUrl, setCapturedPhotoUrl] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -124,6 +126,14 @@ const Admission = () => {
       setVideoObjectUrl('');
     }
   }, [profileVideo]);
+
+  useEffect(() => {
+    return () => {
+      if (capturedPhotoUrl) {
+        URL.revokeObjectURL(capturedPhotoUrl);
+      }
+    };
+  }, [capturedPhotoUrl]);
 
   useEffect(() => {
     const fetchIP = async () => {
@@ -255,9 +265,33 @@ const Admission = () => {
     });
   };
 
+  const captureProfilePicFromVideo = (videoEl) => {
+    if (!videoEl) return null;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = videoEl.videoWidth || 640;
+      canvas.height = videoEl.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+      return new Promise((resolve) => {
+        canvas.toBlob((blob) => {
+          resolve(blob);
+        }, 'image/jpeg', 0.85);
+      });
+    } catch (err) {
+      console.error('Failed to capture profile photo frame:', err);
+      return null;
+    }
+  };
+
   const startCamera = async () => {
     setShowCamera(true);
     setProfileVideo(null);
+    setCapturedPhotoBlob(null);
+    if (capturedPhotoUrl) URL.revokeObjectURL(capturedPhotoUrl);
+    setCapturedPhotoUrl('');
     setError('');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -289,13 +323,31 @@ const Admission = () => {
         setShowCamera(false);
       };
 
+      // Automatically capture profile photo frame 1s into recording
+      setTimeout(async () => {
+        if (videoRef.current) {
+          const photoBlob = await captureProfilePicFromVideo(videoRef.current);
+          if (photoBlob) {
+            setCapturedPhotoBlob(photoBlob);
+            setCapturedPhotoUrl(URL.createObjectURL(photoBlob));
+          }
+        }
+      }, 1000);
+
       mediaRecorder.start();
       setIsRecording(true);
     }
   };
 
-  const stopRecording = () => {
+  const stopRecording = async () => {
     if (mediaRecorderRef.current && isRecording) {
+      if (!capturedPhotoBlob && videoRef.current) {
+        const photoBlob = await captureProfilePicFromVideo(videoRef.current);
+        if (photoBlob) {
+          setCapturedPhotoBlob(photoBlob);
+          setCapturedPhotoUrl(URL.createObjectURL(photoBlob));
+        }
+      }
       mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
@@ -325,16 +377,7 @@ const Admission = () => {
 
   const sendEmailNotification = async (candidateData) => {
     try {
-      const response = await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          access_key: import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || "751bb031-31ee-44f1-af57-9e1731da45da",
-          subject: `Admission Form Submitted — ${fullName || 'New Candidate'}`,
-          from_name: "iSuccessNode Exam Portal",
-          email: candidateData.email,
-          recipient: import.meta.env.VITE_SUPPORT_EMAIL || "info@isuccessnode.com",
-          message: `
+      const emailMessage = `
 ----------------------------------------
 ADMISSION VERIFICATION REPORT
 ----------------------------------------
@@ -687,27 +730,41 @@ ACCEPTED BY CANDIDATE: YES ✓
 SUPPORTING EVIDENCE:
 ---------------------
 • IP Address: ${candidateData.ip || 'Not Available'}
+• Candidate Profile Photo:
+${candidateData.photoUrl || 'Not Available'}
+
 • Live Video Statement:
-${candidateData.photoUrl}
+${candidateData.videoUrl || 'Not Available'}
 
 • Aadhaar Card (Front):
-${candidateData.frontUrl}
+${candidateData.frontUrl || 'Not Available'}
 
 • Aadhaar Card (Back):
-${candidateData.backUrl}
+${candidateData.backUrl || 'Not Available'}
 
 • PAN Card:
-${candidateData.panUrl}
+${candidateData.panUrl || 'Not Available'}
 
 • Digital Signature:
-${candidateData.signUrl}
+${candidateData.signUrl || 'Not Available'}
 
 By proceeding, the candidate electronically signs and agrees to all terms above.
 ----------------------------------------
 
 Submitted via iSuccessNode Exam Portal
-`
-        })
+`;
+
+      const formData = new FormData();
+      formData.append("access_key", "1c05310c-d9e8-4686-95a2-8bde58311e7d");
+      formData.append("name", fullName || "New Candidate");
+      formData.append("email", candidateData.email);
+      formData.append("subject", `Admission Form Submitted — ${fullName || 'New Candidate'}`);
+      formData.append("from_name", "iSuccessNode Exam Portal");
+      formData.append("message", emailMessage);
+
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        body: formData
       });
       const data = await response.json();
       console.log('Web3Forms response status:', response.status);
@@ -763,6 +820,13 @@ Submitted via iSuccessNode Exam Portal
         handleFileUpload(signatureBlob, 'signature')
       ]);
 
+      let photoUrl = '';
+      if (capturedPhotoBlob) {
+        photoUrl = await handleFileUpload(capturedPhotoBlob, 'profile-photo', 'jpg', 'image/jpeg');
+      } else {
+        photoUrl = videoUrl;
+      }
+
       setUploadStatus('Saving admission record...');
       const fullAddress = `${address ? address + ', ' : ''}${selectedCity}, ${selectedState} - ${pincode}`;
       const admissionId = crypto.randomUUID();
@@ -781,7 +845,7 @@ Submitted via iSuccessNode Exam Portal
         aadhaar_back_url: backUrl,
         pan_url: panUrl,
         signature_url: signUrl,
-        profile_photo_url: videoUrl,
+        profile_photo_url: photoUrl || videoUrl,
         ip_address: userIP
       }]);
 
@@ -796,7 +860,8 @@ Submitted via iSuccessNode Exam Portal
         pincode,
         ip: userIP,
         address,
-        photoUrl: videoUrl,
+        photoUrl: photoUrl || 'Not Available',
+        videoUrl: videoUrl || 'Not Available',
         frontUrl,
         backUrl,
         panUrl,
@@ -963,11 +1028,25 @@ Submitted via iSuccessNode Exam Portal
                   )}
 
                   {profileVideo && !showCamera && (
-                    <div className="relative w-full max-w-sm">
-                      <video src={videoObjectUrl} controls className="w-full rounded-[2rem] shadow-2xl border-4 border-white" />
-                      <button type="button" onClick={startCamera} className="absolute -bottom-4 right-4 w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 shadow-lg z-10">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
-                      </button>
+                    <div className="relative w-full max-w-sm flex flex-col items-center gap-4">
+                      <div className="relative w-full">
+                        <video src={videoObjectUrl} controls className="w-full rounded-[2rem] shadow-2xl border-4 border-white" />
+                        <button type="button" onClick={startCamera} className="absolute -bottom-4 right-4 w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 shadow-lg z-10" title="Retake Video">
+                          <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                        </button>
+                      </div>
+
+                      {capturedPhotoUrl && (
+                        <div className="flex items-center gap-4 bg-white/90 backdrop-blur-sm p-3.5 rounded-2xl border border-slate-200/80 shadow-sm w-full animate-fade-in">
+                          <div className="w-16 h-16 rounded-xl overflow-hidden border-2 border-indigo-200 shadow-md bg-slate-100 shrink-0">
+                            <img src={capturedPhotoUrl} alt="Captured Profile" className="w-full h-full object-cover" />
+                          </div>
+                          <div className="text-left">
+                            <span className="block text-[10px] font-black uppercase tracking-wider text-indigo-950">Profile Photo Captured ✓</span>
+                            <span className="block text-[9px] font-semibold text-slate-400">Captured automatically during verification</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
