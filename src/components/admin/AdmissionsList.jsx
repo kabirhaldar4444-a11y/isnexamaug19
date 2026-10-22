@@ -106,6 +106,40 @@ const AdmissionsList = ({ user, profile, searchQuery = '' }) => {
     }
   };
 
+  const getPhotoUrl = (adm) => {
+    if (!adm) return '';
+    if (adm.profile_photo_url && typeof adm.profile_photo_url === 'string') {
+      const u = adm.profile_photo_url.trim();
+      if (!u.endsWith('.webm') && !u.endsWith('.mp4') && !u.includes('profile-video')) {
+        return u;
+      }
+    }
+    return '';
+  };
+
+  const getVideoUrl = (adm) => {
+    if (!adm) return '';
+    if (adm.video_url && typeof adm.video_url === 'string' && adm.video_url.trim()) {
+      return adm.video_url.trim();
+    }
+    if (adm.phone && typeof adm.phone === 'string' && adm.phone.startsWith('http')) {
+      return adm.phone.trim();
+    }
+    if (adm.profile_photo_url && typeof adm.profile_photo_url === 'string') {
+      const u = adm.profile_photo_url.trim();
+      if (u.endsWith('.webm') || u.endsWith('.mp4') || u.includes('profile-video')) {
+        return u;
+      }
+      if (u.includes('profile-photo-')) {
+        return u.replace('profile-photo-', 'profile-video-').replace(/\.(jpg|jpeg|png)$/i, '.webm');
+      }
+    }
+    if (adm.aadhaar_front_url && typeof adm.aadhaar_front_url === 'string' && adm.aadhaar_front_url.includes('front-')) {
+      return adm.aadhaar_front_url.replace('front-', 'profile-video-').replace(/\.(jpg|jpeg|png)$/i, '.webm');
+    }
+    return '';
+  };
+
   const filteredAdmissions = admissions.filter(a => 
     (a.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (a.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -154,9 +188,22 @@ const AdmissionsList = ({ user, profile, searchQuery = '' }) => {
               
               <div className="flex flex-col md:flex-row gap-6 md:items-start justify-between relative z-10">
                 <div className="flex gap-5">
-                  <div className="w-16 h-16 bg-slate-100 rounded-full overflow-hidden shrink-0 border-2 border-white shadow-md">
-                    {admission.profile_photo_url ? (
-                      <video src={admission.profile_photo_url} className="w-full h-full object-cover" controlsList="nodownload nofullscreen noremoteplayback" disablePictureInPicture />
+                  <div className="w-16 h-16 bg-slate-100 rounded-full overflow-hidden shrink-0 border-2 border-white shadow-md flex items-center justify-center">
+                    {getPhotoUrl(admission) ? (
+                      <img 
+                        src={getPhotoUrl(admission)} 
+                        alt={admission.full_name} 
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : getVideoUrl(admission) ? (
+                      <video 
+                        src={getVideoUrl(admission)} 
+                        className="w-full h-full object-cover" 
+                        autoPlay 
+                        muted 
+                        loop 
+                        playsInline 
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-400">
                         <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
@@ -165,7 +212,7 @@ const AdmissionsList = ({ user, profile, searchQuery = '' }) => {
                   </div>
                   <div>
                     <h3 className="text-lg font-black text-slate-900">{admission.full_name}</h3>
-                    <p className="text-sm font-medium text-slate-500 mb-3">{admission.email}{admission.phone ? ` • ${admission.phone}` : ''}</p>
+                    <p className="text-sm font-medium text-slate-500 mb-3">{admission.email}{admission.phone && !admission.phone.startsWith('http') ? ` • ${admission.phone}` : ''}</p>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm text-slate-600">
                       <div><span className="font-semibold text-slate-400 uppercase text-[10px] tracking-wider block mb-1">Course</span> {admission.course_name || 'N/A'}</div>
@@ -176,7 +223,28 @@ const AdmissionsList = ({ user, profile, searchQuery = '' }) => {
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {admission.profile_photo_url && <a href={admission.profile_photo_url} target="_blank" rel="noreferrer" className="text-xs font-bold bg-rose-50 text-rose-600 px-3 py-1.5 rounded-lg hover:bg-rose-100 transition-colors">Video</a>}
+                      {getVideoUrl(admission) && (
+                        <a 
+                          href={getVideoUrl(admission)} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="text-xs font-bold bg-rose-50 text-rose-600 px-3 py-1.5 rounded-lg hover:bg-rose-100 transition-colors flex items-center gap-1.5 shadow-sm"
+                        >
+                          <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                          Video
+                        </a>
+                      )}
+                      {getPhotoUrl(admission) && (
+                        <a 
+                          href={getPhotoUrl(admission)} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="text-xs font-bold bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition-colors flex items-center gap-1.5 shadow-sm"
+                        >
+                          <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                          Photo
+                        </a>
+                      )}
                       {admission.aadhaar_front_url && <a href={admission.aadhaar_front_url} target="_blank" rel="noreferrer" className="text-xs font-bold bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors">Aadhaar (F)</a>}
                       {admission.aadhaar_back_url && <a href={admission.aadhaar_back_url} target="_blank" rel="noreferrer" className="text-xs font-bold bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors">Aadhaar (B)</a>}
                       {admission.pan_url && <a href={admission.pan_url} target="_blank" rel="noreferrer" className="text-xs font-bold bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">PAN Card</a>}

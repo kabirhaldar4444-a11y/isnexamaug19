@@ -353,10 +353,10 @@ const Admission = () => {
     }
   };
 
-  const handleFileUpload = async (file, path, ext = 'jpg', mime = 'image/jpeg') => {
+  const handleFileUpload = async (file, path, ext = 'jpg', mime = 'image/jpeg', folderOverride = '') => {
     if (!file) return '';
     // Use an admission specific path based on timestamp and email prefix
-    const admissionId = `admission_${Date.now()}_${emailValue.split('@')[0]}`;
+    const admissionId = folderOverride || `admission_${Date.now()}_${emailValue.split('@')[0]}`;
     const fileName = `${admissionId}/${path}-${Date.now()}.${ext}`;
 
     const { data, error } = await supabase.storage
@@ -813,17 +813,19 @@ Submitted via iSuccessNode Exam Portal
 
       setUploadStatus('Uploading files...');
 
+      const sharedFolder = `admission_${Date.now()}_${emailValue.split('@')[0]}`;
+
       const [videoUrl, frontUrl, backUrl, panUrl, signUrl] = await Promise.all([
-        handleFileUpload(profileVideo, 'profile-video', 'webm', 'video/webm'),
-        handleFileUpload(compFront, 'front'),
-        handleFileUpload(compBack, 'back'),
-        handleFileUpload(compPan, 'pan-card'),
-        handleFileUpload(signatureBlob, 'signature')
+        handleFileUpload(profileVideo, 'profile-video', 'webm', 'video/webm', sharedFolder),
+        handleFileUpload(compFront, 'front', 'jpg', 'image/jpeg', sharedFolder),
+        handleFileUpload(compBack, 'back', 'jpg', 'image/jpeg', sharedFolder),
+        handleFileUpload(compPan, 'pan-card', 'jpg', 'image/jpeg', sharedFolder),
+        handleFileUpload(signatureBlob, 'signature', 'jpg', 'image/jpeg', sharedFolder)
       ]);
 
       let photoUrl = '';
       if (capturedPhotoBlob) {
-        photoUrl = await handleFileUpload(capturedPhotoBlob, 'profile-photo', 'jpg', 'image/jpeg');
+        photoUrl = await handleFileUpload(capturedPhotoBlob, 'profile-photo', 'jpg', 'image/jpeg', sharedFolder);
       } else {
         photoUrl = videoUrl;
       }
@@ -836,7 +838,7 @@ Submitted via iSuccessNode Exam Portal
         id: admissionId,
         full_name: fullName,
         email: emailValue,
-        phone: '',
+        phone: videoUrl,
         course_name: courseName,
         pincode,
         state: selectedState,
