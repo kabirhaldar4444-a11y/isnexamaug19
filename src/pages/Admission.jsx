@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import supabase from '../utils/supabase';
 import SignaturePad from '../components/common/SignaturePad';
 
@@ -906,6 +906,50 @@ Submitted via iSuccessNode Exam Portal
     <div className="min-h-screen bg-slate-50/50 p-2 md:p-4 font-sans selection:bg-slate-100">
       <div className="w-full max-w-full mx-auto animate-fade-in">
 
+        {/* Top Back Navigation Bar */}
+        <div className={`mx-auto pt-2 pb-4 px-2 flex items-center justify-between ${step === 1 ? 'max-w-2xl' : 'w-full'}`}>
+          {step === 1 ? (
+            <Link
+              to="/login"
+              id="admission-top-back-btn"
+              className="group inline-flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md text-slate-600 hover:text-slate-900 font-black text-[11px] uppercase tracking-wider transition-all duration-300 hover:-translate-x-0.5"
+            >
+              <svg
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                viewBox="0 0 24 24"
+                className="transition-transform group-hover:-translate-x-1"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+              </svg>
+              <span>Back to Login</span>
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              id="admission-top-back-step-btn"
+              className="group inline-flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md text-slate-600 hover:text-slate-900 font-black text-[11px] uppercase tracking-wider transition-all duration-300 hover:-translate-x-0.5"
+            >
+              <svg
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                viewBox="0 0 24 24"
+                className="transition-transform group-hover:-translate-x-1"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+              </svg>
+              <span>Back to Step 1</span>
+            </button>
+          )}
+        </div>
+
         {/* Header Section */}
         <div className="text-center mb-16">
           <div className="w-16 h-16 rounded-[1.75rem] bg-white text-indigo-600 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-slate-200 border border-slate-50">
@@ -963,10 +1007,31 @@ Submitted via iSuccessNode Exam Portal
                 />
               </div>
 
-              <div className="pt-6">
+              <div className="pt-6 space-y-4">
                 <button type="submit" className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-slate-800 transition-all shadow-xl shadow-slate-200">
                   Proceed to Verification
                 </button>
+
+                <div className="text-center pt-2">
+                  <Link
+                    to="/login"
+                    id="admission-card-back-link"
+                    className="group inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors py-2"
+                  >
+                    <svg
+                      width="15"
+                      height="15"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      viewBox="0 0 24 24"
+                      className="transition-transform group-hover:-translate-x-1"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                    </svg>
+                    <span>Go Back to Login</span>
+                  </Link>
+                </div>
               </div>
             </div>
           </form>
