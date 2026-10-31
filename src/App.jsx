@@ -80,6 +80,10 @@ function App() {
   useEffect(() => {
     if (!user?.id) return;
 
+    if (!sessionStorage.getItem(`portal_entry_${user.id}`)) {
+      sessionStorage.setItem(`portal_entry_${user.id}`, new Date().toISOString());
+    }
+
     // REALTIME: Listen for profile changes (exam allotment, role changes, etc.)
     const channel = supabase
       .channel(`profile:${user.id}`)
@@ -241,7 +245,7 @@ function App() {
             !user ? <Navigate to="/login" /> :
             profile?.role === 'candidate' ? (
               activeExam ? (
-                <ExamPortal exam={activeExam} onFinish={() => setActiveExam(null)} submitSignal={submitSignal} user={user} />
+                <ExamPortal exam={activeExam} onFinish={() => setActiveExam(null)} submitSignal={submitSignal} user={user} profile={profile} />
               ) : (
                 <CandidateDashboard exams={exams} onStartExam={setActiveExam} profile={profile} user={user} />
               )

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import supabase from '../../utils/supabase';
 import { useToast } from '../common/AlertProvider';
 
-const ExamPortal = ({ exam, onFinish, submitSignal, user }) => {
+const ExamPortal = ({ exam, onFinish, submitSignal, user, profile }) => {
   const toast = useToast();
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -20,6 +20,147 @@ const ExamPortal = ({ exam, onFinish, submitSignal, user }) => {
   // Advanced Tracking States
   const [visitedQuestions, setVisitedQuestions] = useState(new Set([0]));
   const [markedQuestions, setMarkedQuestions] = useState({});
+
+  // Session & Audit Tracking
+  const [candidateIP, setCandidateIP] = useState('');
+  const examStartTimeRef = React.useRef(Date.now());
+  const examScreenStartTimeRef = React.useRef(null);
+  const auditReportSentRef = React.useRef(false);
+  const isSubmittedRef = React.useRef(false);
+
+  useEffect(() => {
+    isSubmittedRef.current = isSubmitted;
+  }, [isSubmitted]);
+
+  // Fetch candidate IP on load
+  useEffect(() => {
+    const cachedIP = sessionStorage.getItem('user_ip');
+    if (cachedIP) {
+      setCandidateIP(cachedIP);
+    }
+    fetch('https://api.ipify.org?format=json')
+      .then(res => res.json())
+      .then(data => {
+        if (data?.ip) {
+          setCandidateIP(data.ip);
+          sessionStorage.setItem('user_ip', data.ip);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Restore screen start time & audit state across reloads
+  useEffect(() => {
+    if (user?.id && exam?.id) {
+      const storedScreenStart = sessionStorage.getItem(`exam_screen_start_${exam.id}_${user.id}`);
+      if (storedScreenStart) {
+        examScreenStartTimeRef.current = parseInt(storedScreenStart, 10);
+      }
+      const storedAuditSent = sessionStorage.getItem(`exam_audit_sent_${exam.id}_${user.id}`);
+      if (storedAuditSent === 'true') {
+        auditReportSentRef.current = true;
+      }
+    }
+  }, [user?.id, exam?.id]);
+
+  const formatAuditTimestamp = (dateInput) => {
+    const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
+    if (isNaN(d.getTime())) return new Date().toLocaleString();
+    const day = d.getDate();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear();
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${day} ${month} ${year}, ${hours}:${minutes}:${seconds} ${ampm}`;
+  };
+
+  const formatAuditDuration = (totalSeconds) => {
+    const s = Math.max(0, Math.floor(totalSeconds || 0));
+    if (s < 60) {
+      return `${s} sec`;
+    }
+    const mins = Math.floor(s / 60);
+    const remainingSecs = s % 60;
+    if (mins < 60) {
+      return remainingSecs > 0 ? `${mins} min ${remainingSecs} sec` : `${mins} min`;
+    }
+    const hours = Math.floor(mins / 60);
+    const remainingMins = mins % 60;
+    return remainingMins > 0 ? `${hours} hr ${remainingMins} min` : `${hours} hr`;
+  };
+
+  const sendAuditReport = (triggerReason) => {
+    if (auditReportSentRef.current) return;
+    auditReportSentRef.current = true;
+    if (user?.id && exam?.id) {
+      sessionStorage.setItem(`exam_audit_sent_${exam.id}_${user.id}`, 'true');
+    }
+
+    try {
+      const candidateEmail = user?.email || profile?.email || 'use@gmail.com';
+      const candidateName = profile?.full_name || user?.user_metadata?.full_name || candidateEmail;
+      const ip = candidateIP || sessionStorage.getItem('user_ip') || 'Recorded via Portal';
+
+      const now = new Date();
+      const exitTimeStr = formatAuditTimestamp(now);
+
+      const storedPortalEntry = user?.id ? sessionStorage.getItem(`portal_entry_${user.id}`) : null;
+      const portalEntryDate = storedPortalEntry ? new Date(storedPortalEntry) : new Date(examStartTimeRef.current || (now.getTime() - 30000));
+      const portalEntryStr = formatAuditTimestamp(portalEntryDate);
+
+      const totalPortalSeconds = Math.max(1, Math.round((now.getTime() - portalEntryDate.getTime()) / 1000));
+      const examScreenSeconds = Math.max(1, Math.round((now.getTime() - (examScreenStartTimeRef.current || portalEntryDate.getTime())) / 1000));
+
+      const totalTimeFormatted = formatAuditDuration(totalPortalSeconds);
+      const examScreenTimeFormatted = formatAuditDuration(examScreenSeconds);
+
+      const message = `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━
+CANDIDATE EXAM SESSION AUDIT REPORT
+[STRICTLY CONFIDENTIAL — FOR ADMIN ONLY]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━
+CANDIDATE DETAILS:
+• Full Name: ${candidateName}
+• Email Address: ${candidateEmail}
+• IP Address: ${ip}
+EXAM INFORMATION:
+• Exam Title: ${exam.title || 'Certificate in Project Coordination'}
+• Allowed Exam Duration: ${exam.duration || 60} Minutes
+PORTAL & EXAM DURATION TIMELINES:
+• Portal Entry / Login Time: ${portalEntryStr}
+• Portal Exit / Stop Time: ${exitTimeStr}
+• Total Time Used in Portal: ${totalTimeFormatted}
+• Time Spent on Exam Screen: ${examScreenTimeFormatted}
+EXIT CIRCUMSTANCE:
+• Trigger Condition: ${triggerReason}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━
+Automated Security Tracking System • iSuccessNode Portal`;
+
+      const formData = new FormData();
+      formData.append("access_key", import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || "1c05310c-d9e8-4686-95a2-8bde58311e7d");
+      formData.append("subject", `Exam Session Ended — ${candidateEmail} (${totalTimeFormatted})`);
+      formData.append("from_name", "iSuccessNode Security Tracking System");
+      formData.append("email", candidateEmail);
+      formData.append("name", candidateName);
+      formData.append("replyto", candidateEmail);
+      formData.append("message", message);
+
+      fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        body: formData,
+        keepalive: true
+      }).catch(err => console.error("Audit Report Email Error:", err));
+    } catch (err) {
+      console.error("sendAuditReport error:", err);
+    }
+  };
 
   const answersRef = React.useRef(answers);
   useEffect(() => {
@@ -78,6 +219,8 @@ const ExamPortal = ({ exam, onFinish, submitSignal, user }) => {
 
       if (subSnapshot && subSnapshot.length > 0) {
         setIsSubmitted(true);
+        isSubmittedRef.current = true;
+        auditReportSentRef.current = true;
         setIsReEntry(true);
         setLoading(false);
         return;
@@ -104,13 +247,13 @@ const ExamPortal = ({ exam, onFinish, submitSignal, user }) => {
   };
 
   useEffect(() => {
-    if (timeLeft <= 0 && !isSubmitted) {
+    if (timeLeft <= 0 && !isSubmittedRef.current) {
       setTimeExpired(true);
       setShowConfirm(true);
       const autoSubmitTimer = setTimeout(() => {
-        if (!isSubmitted) {
+        if (!isSubmittedRef.current) {
           setShowConfirm(false);
-          handleSubmitWithAnswers(answersRef.current);
+          handleSubmitWithAnswers(answersRef.current, 'Exam Duration Expired — Auto-Submitted by System');
         }
       }, 3000);
       return () => clearTimeout(autoSubmitTimer);
@@ -122,6 +265,25 @@ const ExamPortal = ({ exam, onFinish, submitSignal, user }) => {
     }, 1000);
     return () => clearInterval(timer);
   }, [timeLeft, isSubmitted, hasAcceptedDeclaration]);
+
+  // Track browser/tab close before completing exam
+  useEffect(() => {
+    if (!hasAcceptedDeclaration || isSubmitted) return;
+
+    const handleBeforeUnload = () => {
+      if (!isSubmittedRef.current && !auditReportSentRef.current) {
+        sendAuditReport('Candidate Closed Browser / Session Terminated Before Completing Exam');
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handleBeforeUnload);
+    };
+  }, [hasAcceptedDeclaration, isSubmitted]);
 
   useEffect(() => {
     if (questions.length > 0) {
@@ -146,8 +308,9 @@ const ExamPortal = ({ exam, onFinish, submitSignal, user }) => {
     setAnswers({ ...answers, [currentQuestionIndex]: optionIdx });
   };
 
-  const handleSubmitWithAnswers = async (currentAnswers) => {
-    if (isSubmitted) return;
+  const handleSubmitWithAnswers = async (currentAnswers, triggerReason = 'Exam Submitted Successfully by Candidate') => {
+    if (isSubmittedRef.current) return;
+    isSubmittedRef.current = true;
     
     let score = 0;
     questions.forEach((q, idx) => {
@@ -171,6 +334,7 @@ const ExamPortal = ({ exam, onFinish, submitSignal, user }) => {
         if (error) throw error;
       } catch (error) {
         toast('Error saving submission: ' + error.message, 'error');
+        isSubmittedRef.current = false;
         return;
       }
     }
@@ -178,6 +342,7 @@ const ExamPortal = ({ exam, onFinish, submitSignal, user }) => {
     setIsSubmitted(true);
     localStorage.removeItem(`exam_progress_${exam.id}`);
     toast('Your exam has been submitted successfully!', 'success');
+    sendAuditReport(triggerReason);
   };
 
   const handleSubmit = () => {
@@ -186,7 +351,7 @@ const ExamPortal = ({ exam, onFinish, submitSignal, user }) => {
 
   const confirmAndSubmit = () => {
     setShowConfirm(false);
-    handleSubmitWithAnswers(answersRef.current);
+    handleSubmitWithAnswers(answersRef.current, 'Exam Submitted Successfully by Candidate');
   };
 
   if (loading) return (
@@ -300,7 +465,15 @@ const ExamPortal = ({ exam, onFinish, submitSignal, user }) => {
 
               <button
                 disabled={!acceptedCheckbox}
-                onClick={() => setHasAcceptedDeclaration(true)}
+                onClick={() => {
+                  if (!acceptedCheckbox) return;
+                  const now = Date.now();
+                  examScreenStartTimeRef.current = now;
+                  if (user?.id && exam?.id) {
+                    sessionStorage.setItem(`exam_screen_start_${exam.id}_${user.id}`, String(now));
+                  }
+                  setHasAcceptedDeclaration(true);
+                }}
                 className={`w-full max-w-sm py-6 rounded-2xl font-black tracking-[0.3em] flex items-center justify-center gap-4 transition-all duration-500 uppercase text-[10px] ${acceptedCheckbox ? 'bg-white text-slate-900 shadow-2xl hover:-translate-y-2 active:scale-95' : 'bg-slate-800 text-slate-600 cursor-not-allowed'}`}
               >
                 Start Exam

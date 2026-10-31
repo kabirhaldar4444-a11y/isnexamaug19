@@ -10,6 +10,7 @@ const AdmissionsList = ({ user, profile, searchQuery = '' }) => {
   const [selectedAdmission, setSelectedAdmission] = useState(null);
   const [password, setPassword] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [createdAccountModal, setCreatedAccountModal] = useState(null);
   const toast = useToast();
   const confirm = useConfirm();
 
@@ -18,12 +19,15 @@ const AdmissionsList = ({ user, profile, searchQuery = '' }) => {
   }, []);
 
   useEffect(() => {
-    if (!showPasswordModal) return;
+    if (!showPasswordModal && !createdAccountModal) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') setShowPasswordModal(false);
+      if (e.key === 'Escape') {
+        setShowPasswordModal(false);
+        setCreatedAccountModal(null);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
 
@@ -31,7 +35,7 @@ const AdmissionsList = ({ user, profile, searchQuery = '' }) => {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [showPasswordModal]);
+  }, [showPasswordModal, createdAccountModal]);
 
   const fetchAdmissions = async () => {
     try {
@@ -69,21 +73,28 @@ const AdmissionsList = ({ user, profile, searchQuery = '' }) => {
   const confirmAccept = async () => {
     if (!password) return toast('Please generate or enter a password.', 'warning');
     
-    setProcessingId(selectedAdmission.id);
+    const candidateData = selectedAdmission;
+    const generatedPassword = password;
+
+    setProcessingId(candidateData.id);
     setShowPasswordModal(false);
 
     try {
       const { error } = await supabase.rpc('admin_accept_admission', {
-        p_admission_id: selectedAdmission.id,
-        p_password: password
+        p_admission_id: candidateData.id,
+        p_password: generatedPassword
       });
 
       if (error) throw error;
 
-      toast(`Admission for ${selectedAdmission.full_name} accepted and user created!`, 'success');
+      toast(`Admission for ${candidateData.full_name} accepted and user created!`, 'success');
       
-      // Optionally show the password to the admin so they can email it to the user.
-      alert(`User Created!\nEmail: ${selectedAdmission.email}\nPassword: ${password}\n\nPlease share this password securely with the user.`);
+      // Show custom credentials popup instead of native browser alert
+      setCreatedAccountModal({
+        fullName: candidateData.full_name,
+        email: candidateData.email,
+        password: generatedPassword
+      });
       
       fetchAdmissions();
     } catch (err) {
@@ -364,6 +375,106 @@ const AdmissionsList = ({ user, profile, searchQuery = '' }) => {
                 className="flex-[2] py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-[11px] uppercase tracking-[0.15em] transition-all shadow-lg shadow-slate-900/20 active:scale-95"
               >
                 Create Account
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* User Created Success Modal */}
+      {createdAccountModal && createPortal(
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setCreatedAccountModal(null);
+          }}
+          className="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fade-in"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh' }}
+        >
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative scale-in-center border border-slate-100 my-auto text-left">
+            <button 
+              type="button"
+              onClick={() => setCreatedAccountModal(null)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 p-2 rounded-xl hover:bg-slate-50 transition-colors"
+            >
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+
+            <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm ring-8 ring-emerald-50/50">
+              <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+
+            <h3 className="text-2xl font-black text-slate-900 mb-1 tracking-tight">User Created Successfully!</h3>
+            <p className="text-xs font-semibold text-slate-400 mb-6">
+              The candidate account is ready. Share these login credentials with the user.
+            </p>
+
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4 mb-6">
+              <div>
+                <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Candidate Name</span>
+                <span className="text-sm font-bold text-slate-900">{createdAccountModal.fullName}</span>
+              </div>
+              
+              <div className="flex items-center justify-between border-t border-slate-200/60 pt-3">
+                <div className="min-w-0 pr-2">
+                  <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Email Address</span>
+                  <span className="text-sm font-bold text-slate-900 truncate block">{createdAccountModal.email}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(createdAccountModal.email);
+                    toast('Email copied to clipboard!', 'info', 2000);
+                  }}
+                  className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-slate-800 transition-colors shadow-xs"
+                  title="Copy Email"
+                >
+                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-200/60 pt-3">
+                <div className="min-w-0 pr-2">
+                  <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Password</span>
+                  <span className="text-base font-black font-mono text-indigo-600 block">{createdAccountModal.password}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(createdAccountModal.password);
+                    toast('Password copied to clipboard!', 'info', 2000);
+                  }}
+                  className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-slate-800 transition-colors shadow-xs"
+                  title="Copy Password"
+                >
+                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+                </button>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200/60 p-3 rounded-xl font-medium mb-6 flex items-start gap-2">
+              <svg className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
+              <span>Please share this password securely with the user.</span>
+            </p>
+
+            <div className="flex gap-3">
+              <button 
+                type="button"
+                onClick={() => {
+                  const text = `Exam Portal Login Credentials\nEmail: ${createdAccountModal.email}\nPassword: ${createdAccountModal.password}`;
+                  navigator.clipboard.writeText(text);
+                  toast('Full credentials copied to clipboard!', 'success', 3000);
+                }}
+                className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all"
+              >
+                Copy All
+              </button>
+              <button 
+                type="button"
+                onClick={() => setCreatedAccountModal(null)}
+                className="flex-[1.5] py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-[11px] uppercase tracking-[0.15em] transition-all shadow-lg shadow-slate-900/20 active:scale-95"
+              >
+                Done
               </button>
             </div>
           </div>
