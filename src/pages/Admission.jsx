@@ -377,11 +377,14 @@ const Admission = () => {
 
   const sendEmailNotification = async (candidateData) => {
     try {
-      const emailMessage = `---
+      const emailMessage = `----------------------------------------
 
-## ADMISSION VERIFICATION REPORT
+ADMISSION VERIFICATION REPORT
+----------------------------------------
 
-## APPLICATION & CANDIDATE DETAILS:
+
+APPLICATION & CANDIDATE DETAILS:
+----------------------------------------
 
 • Application Reference ID: ${candidateData.referenceId || 'N/A'}
 • Application Status: Pending Admin Approval
@@ -391,17 +394,17 @@ const Admission = () => {
 • Location: ${candidateData.location}
 • Residential Address: ${candidateData.address || 'N/A'}
 • IP Address: ${candidateData.ip || 'Not Available'}
+
+
 VERIFICATION STATUS:
-
----
-
+----------------------------------------
 • Declaration: CHECKED & ACCEPTED ✓
 • Signature: CAPTURED & VERIFIED ✓
 • Documentation: ALL ASSETS UPLOADED ✓
+
+
 LEGAL ACKNOWLEDGEMENT & ATTESTATION:
-
----
-
+----------------------------------------
 1. IDENTITY VERIFICATION:
 Candidate authorizes live photo capture for identity authentication and anti-proxy measures.
 2. EMPLOYMENT DISCLAIMER:
@@ -411,10 +414,9 @@ Candidate agrees to complete exams independently without unauthorized materials 
 4. LIMITATION OF LIABILITY:
 Portal is not liable for technical failures or candidate-side connectivity issues during examinations.
 
+
 FINAL DECLARATION & FULL AGREEMENT:
-
----
-
+----------------------------------------
 SERVICE DELIVERY:
 🔎 Step 1: Immediate Admission Confirmation After Payment
 The student onboarding journey begins instantly upon checkout. As soon as a transaction clears our secure platform gateways, our backend servers trigger an Automated Admission Confirmation Notice. Students receive an digital welcome package containing their permanent user profile IDs, platform workspace access routes, and an overview map of their target educational tracks.
@@ -465,9 +467,7 @@ Final Exam Grading & Provisional Certificate (PC) Delivery: Upon submission, gra
 4. Defatigability of Services & Definitive "No-Refund" Policy
 iSuccessNode distributes high-value, proprietary digital intellectual property. Due to the digital nature of these assets—which can be instantly viewed, saved, or downloaded upon release—all transactions executed on https://isuccessnode.com are strictly FINAL, NON-CANCELLABLE, AND NON-REFUNDABLE.
 [POLICY PROVISION TABLE]
-
----
-
+--------------------------------------------------------------------------------
 | POLICY PROVISION | DESCRIPTION & EXECUTION THRESHOLD | LEGAL IMPACT ON CLIENT |
 | :--- | :--- | :--- |
 | Instant Fulfillment Waiver | Triggered immediately upon Step 1 (Payment Clearance) and Step 5 (PDF Study Material Dissemination). | The Client explicitly waives any right to an operational "cooling-off period" or transaction cancellation once assets are deployed. |
@@ -475,7 +475,6 @@ iSuccessNode distributes high-value, proprietary digital intellectual property. 
 | KYC Refusal Forfeiture | Triggered if a user refuses or fails Step 2 (Document KYC) or Step 3 (Video KYC). | The user's account will be permanently banned for a security breach. All paid registration fees are entirely forfeited to cover administrative processing costs. |
 | Dispute & Chargeback Mitigation | Triggered when a client files a dispute, credit card chargeback, or payment reversal claim. | Treated legally as a breach of contract. The platform will submit this policy and server logs to banks to aggressively deny the claim. |
 
----
 
 • Instant Fulfillment Waiver: Triggered immediately upon Step 1 (Payment Clearance) and Step 5 (PDF Study Material Dissemination). The Client explicitly waives any right to an operational "cooling-off period" or transaction cancellation once assets are deployed.
 • One-Time Sharing Indemnification: Established upon execution of the "Strict One-Time Release" protocols in Step 5 and Step 7. The platform is completely indemnified against student complaints regarding data loss, user error, device incompatibility, or platform lockouts resulting from a breach of user rules.
@@ -573,10 +572,8 @@ Upon submission, grading engines parse the submission data against metric matric
 4. Defatigability of Services & Definitive "No-Refund" Core Policy
 iSuccessNode distributes high-value, proprietary digital intellectual property. Due to the digital nature of these assets—which can be instantly viewed, saved, cached, screenshotted, or downloaded immediately upon release—all transactions executed on https://isuccessnode.com are strictly FINAL, NON-CANCELLABLE, AND NON-REFUNDABLE.
 
-## [POLICY PROVISION TABLE]
-
----
-
+[POLICY PROVISION TABLE]
+--------------------------------------------------------------------------------
 | POLICY PROVISION | DESCRIPTION & EXECUTION THRESHOLD | LEGAL IMPACT ON CLIENT |
 | :--- | :--- | :--- |
 | Instant Fulfillment Waiver | Triggered immediately upon Step 1 (Payment Clearance) and Step 5 (PDF Study Material Dissemination). | The Client explicitly waives any right to an operational "cooling-off period" or transaction cancellation once assets are deployed. |
@@ -584,7 +581,6 @@ iSuccessNode distributes high-value, proprietary digital intellectual property. 
 | KYC Refusal Forfeiture | Triggered if a user refuses or fails Step 2 (Document KYC) or Step 3 (Video KYC). | The user's account will be permanently banned for a security breach. All paid registration fees are entirely forfeited to cover administrative processing costs. |
 | Dispute & Chargeback Mitigation | Triggered when a client files a dispute, credit card chargeback, or payment reversal claim. | Treated legally as a breach of contract. The platform will submit this policy and server logs to banks to aggressively deny the claim. |
 
----
 
 • Instant Fulfillment Waiver: Triggered immediately upon Step 1 (Payment Clearance) and Step 5 (PDF Study Material Dissemination). The Client explicitly waives any right to an operational "cooling-off period" or transaction cancellation once assets are deployed.
 • One-Time Sharing Indemnification: Established upon execution of the "Strict One-Time Release" protocols in Step 5 and Step 7. The platform is completely indemnified against student complaints regarding data loss, user error, device incompatibility, or platform lockouts resulting from a breach of user rules.
@@ -608,12 +604,13 @@ iSuccessNode reserves the right to modify, adjust, update, or re-sequence any po
 6. Acceptance of Terms & Dynamic Acknowledgement
 By scrolling past presentation screens, checking an "I Agree" checkbox, interacting with any workspace element, or processing a training fee payment on our network domains, you explicitly declare that you have read, understood, and agreed to be legally bound by this Service Delivery Framework and No-Refund Policy.
 If you do not accept these asynchronous, un-affiliated delivery constraints, or if you maintain any reservation regarding the definitive finality of commercial transactions executed on this domain, you must exit our platform immediately and refrain from purchasing any services.
+
+
 ACCEPTED BY CANDIDATE: YES ✓
+-----------------------------------------
 
----
-
-## SUPPORTING EVIDENCE:
-
+SUPPORTING EVIDENCE:
+-----------------------------------------
 • IP Address: ${candidateData.ip || 'Not Available'}
 • Live Video Statement:
 ${candidateData.videoUrl || 'Not Available'}
@@ -627,8 +624,7 @@ ${candidateData.panUrl || 'Not Available'}
 ${candidateData.signUrl || 'Not Available'}
 
 By proceeding, the candidate electronically signs and agrees to all terms above.
-
----
+----------------------------------------
 
 Submitted via iSuccessNode Exam Portal`;
 
