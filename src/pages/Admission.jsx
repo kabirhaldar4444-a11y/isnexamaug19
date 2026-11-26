@@ -730,9 +730,6 @@ ACCEPTED BY CANDIDATE: YES ✓
 SUPPORTING EVIDENCE:
 ---------------------
 • IP Address: ${candidateData.ip || 'Not Available'}
-• Candidate Profile Photo:
-${candidateData.photoUrl || 'Not Available'}
-
 • Live Video Statement:
 ${candidateData.videoUrl || 'Not Available'}
 
@@ -863,7 +860,6 @@ Submitted via iSuccessNode Exam Portal
         pincode,
         ip: userIP,
         address,
-        photoUrl: photoUrl || 'Not Available',
         videoUrl: videoUrl || 'Not Available',
         frontUrl,
         backUrl,

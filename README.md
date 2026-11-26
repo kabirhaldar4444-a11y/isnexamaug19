@@ -3,12 +3,14 @@
 This is the official exam portal for isuccessnode.
 
 ## Features
+
 - Candidate Registration and KYC Verification
 - Interactive Online Exams
 - Admin Dashboard for Exam Management
 - Score Reporting and Analytics
 
 ## Tech Stack
+
 - React + Vite
 - Tailwind CSS
 - Supabase (Backend & Auth)
@@ -22,4 +24,9 @@ This is the official exam portal for isuccessnode.
 4. Run development server: `npm run dev`
 
 ## Website
+
 [https://www.isuccessnode.com/](https://www.isuccessnode.com/)
+
+## Deployement
+
+https://github.com/kabirhaldar4444-a11y/isnexamaug19
